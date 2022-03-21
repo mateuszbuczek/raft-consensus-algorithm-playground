@@ -19,9 +19,9 @@ func (rs *RaftService) RequestVote(args model.RequestVoteArgs, reply *model.Requ
 		return nil
 	}
 
-	if rs.canVote {
+	if rs.isCanVote() {
 		log.Printf("voted for %d\n", args.CandidateId)
-		rs.canVote = false
+		rs.setCanVote(false)
 		reply.VoteGranted = true
 		reply.Term = rs.getLastLogTerm()
 	}

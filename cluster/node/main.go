@@ -19,7 +19,7 @@ func main() {
 	nodeRegistryClient := cluster.NodeRegistryClient{Url: *nodeRegistryHostString}
 
 	logger := log.Default()
-	logger.SetPrefix(fmt.Sprintf("[NODE_ID %d] [NODE_HOST %s] ", *nodeId, *nodeHostString))
+	logger.SetPrefix(fmt.Sprintf("\033[3%dm[NODE_ID %d] [NODE_HOST %s] ", *nodeId, *nodeId, *nodeHostString))
 	logger.SetFlags(log.Ldate | log.Lmicroseconds)
 
 	raftService := service.RaftService{

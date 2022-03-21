@@ -28,6 +28,7 @@ type RaftService struct {
 
 	// CANDIDATE
 	canVote          bool
+	canVoteLock      sync.Mutex
 	votesCount       int
 	becomeLeaderChan chan bool
 
@@ -43,7 +44,7 @@ func (rs *RaftService) RunNodeAsync() {
 	rs.becomeLeaderChan = make(chan bool)
 	rs.followersIndex = sync.Map{}
 
-	heartbeatInterval := 1000
+	heartbeatInterval := 10
 
 	go rs.startNode(heartbeatInterval)
 }
@@ -54,17 +55,16 @@ func (rs *RaftService) startNode(heartbeatInterval int) {
 		case FOLLOWER:
 			select {
 			case <-rs.heartbeatChan:
-				log.Println("heartbeat received")
+				log.Println("❤ received")
 			case <-time.After(time.Duration(rand.Intn(heartbeatInterval*5)+heartbeatInterval*5) * time.Millisecond):
-				log.Println("heartbeat have not been received")
+				log.Println("❤ have not been received")
 				rs.state = CANDIDATE
 			}
 		case CANDIDATE:
 			log.Println("becomes candidate")
 			rs.votesCount = 1
-			rs.canVote = false
+			rs.setCanVote(false)
 
-			log.Printf("canVote %v", rs.canVote)
 			go rs.broadcastRequestVote()
 
 			select {
@@ -93,7 +93,7 @@ func (rs *RaftService) fetchCurrentNodes() []*cluster.Node {
 
 func (rs *RaftService) becomeFollower() {
 	rs.state = FOLLOWER
-	rs.canVote = true
+	rs.setCanVote(true)
 }
 
 func (rs RaftService) isLastLogTermAhead(term int) bool {
@@ -147,4 +147,16 @@ func (rs *RaftService) getFollowerIndex(node *cluster.Node) int {
 
 func (rs *RaftService) setFollowerIndex(node *cluster.Node, index int) {
 	rs.followersIndex.Store(node.Id, index)
+}
+
+func (rs *RaftService) isCanVote() bool {
+	rs.canVoteLock.Lock()
+	defer rs.canVoteLock.Unlock()
+	return rs.canVote
+}
+
+func (rs *RaftService) setCanVote(value bool) {
+	rs.canVoteLock.Lock()
+	defer rs.canVoteLock.Unlock()
+	rs.canVote = value
 }
